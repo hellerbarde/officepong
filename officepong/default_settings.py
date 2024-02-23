@@ -1,0 +1,10 @@
+
+TORTOISE_DB_URL = 'sqlite://./officepong.db'
+TORTOISE_CONFIG = None
+
+ELO_K_FACTOR = 5
+ELO_START_VALUE = 1500
+
+RANKING_MIN_GAMES = 3
+
+

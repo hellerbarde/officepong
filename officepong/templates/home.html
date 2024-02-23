@@ -2,93 +2,248 @@
 <!doctype html>
 <head>
   <title>OfficePong</title>
-  <link rel= "stylesheet" type= "text/css" href= "{{ url_for("static", filename="style.css") }}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
   <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <style>
+    .addmatch input[type="checkbox"] {
+      display: none;
+    }
+    .addmatch .winner input[type="checkbox"]:checked+label {
+      background: #48c78e;
+      text-shadow: 0 0 2px #fff, 0 0 2px #fff, 0 0 2px #fff;
+      color: #fff;
+    }
+    .addmatch .loser input[type="checkbox"]:checked+label {
+      background: #f14668;
+      text-shadow: 0 0 2px #fff, 0 0 2px #fff, 0 0 2px #fff;
+      color: #fff;
+    }
+    .notification-container.top-right {
+      width: 100%;
+      z-index: 99999;
+      position: fixed;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      padding: 15px;
+      right: 0;
+      top: 0;
+      text-align: right;
+      align-items: flex-end;
+    }
+    .player-name::before {
+      display: inline;
+      position: absolute;
+      font-size: 1.5em;
+      margin-left: -1.8em;
+      margin-top: -0.3em;
+      content: "👑";
+    }
+  </style>
 </head>
 <body>
-  <div class="results">
-    <div class="matches">
-      <h3>Match History</h3>
-      <table>
-	<tr>
-	  <th>Date</th>
-	  <th>Won</th>
-	  <th>Lost</th>
-	  <th>Score</th>
-	  <th>Act.</th>
-	  <th>Exp.</th>
-	  <th>&Delta;</th>
-	</tr>
-	{% for match in matches[::-1] %}
-	<tr>
-	  <td>{{convert_timestamp(match.timestamp)}}</td>
-	  <td>{{match.winners}}</td>
-	  <td>{{match.losers}}</td>
-	  <td>{{match.win_score}} : {{match.lose_score}}</td>
-	  <td>{{'%i%%' % (100 * (match.actual|float))}}</td>
-	  <td>{{'%i%%' % (100 * (match.expected|float))}}</td>
-	  <td align="right">{{'%.1f' % (match.delta|float)}}</td>
-	</tr>
-	{% endfor %}
-      </table>
+  
+  <div class="notification-container top-right">
+    {% if success_msg %}
+    <div class="notification is-success">
+      <button class="delete"></button>
+      {{ success_msg }}
     </div>
-    <div class="leaderboard">
-      <h3>Leaderboard</h3>
-      <table>
-	<tr>
-	  <th>Name</th>
-	  <th>Elo</th>
-	  <th align="right">Games</th>
-	</tr>
-	{% for elo, name, games in players if games >= 3 %}
-	<tr>
-	  <td>{{name}}</td>
-	  <td align="right">{{elo|int}}</td>
-	  <td align="right">{{games|int}}</td>
-	</tr>
-	{% endfor %}
-      </table>
+    {% endif %}
+
+    {% if error_msg %}
+    <div class="notification is-danger">
+      <button class="delete"></button>
+      {{ error_msg }}
     </div>
+    {% endif %}
   </div>
-  <hr>
-  <div>
-  <form action="{{ url_for("add_match") }}" method="post">
-    <div class="loser">
-      <h3>Loser</h3>
-      {% for elo, name, _ in players %}<input type="checkbox" value="{{name}}" name="loser" id="lose_{{name}}"/><label for="lose_{{name}}">{{name}}</label>{% endfor %}
-      <center>
-	<select class="lose_score" name="lose_score">
-	  <option disabled selected value>
-	    {% for n in range(31) %}
-	  <option value="{{n}}">{{n}}</option>
-	  {% endfor %}
-	</select>
-      </center>
-    </div>
-    <div class="winner">
-      <h3>Winner</h3>
-      {% for elo, name, _ in players %}<input type="checkbox" value="{{name}}" name="winner" id="win_{{name}}"/><label for="win_{{name}}">{{name}}</label>{% endfor %}
-      <center>
-	<select name="win_score">
-	  <option value="21">21</option>
-	  {% for n in range(33) %}
-	  <option value="{{n}}">{{n}}</option>
-	  {% endfor %}
-	</select>
-      </center>
-    </div>
-    <input type="submit" value="Add Match" class="wide">
-  </form>
+
+  <div class="container">
+    <section class="results section">
+      <h1 class="title">Office Ping Pong Scores</h1>
+      <div class="columns">
+        <div class="leaderboard column">
+          <h3 class="subtitle">Leaderboard</h3>
+          <table class="table is-striped is-hoverable">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Elo</th>
+                <th align="right">Games</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for elo, name, games in players if games >= 3 %}
+              <tr>
+                <td class="player-name">{{name}}</td>
+                <td align="right">{{ elo | int }}</td>
+                <td align="right">{{ games | int }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="matches column">
+          <h3 class="subtitle">Match History</h3>
+          <table class="table is-striped is-hoverable is-bordered">
+            <tr>
+              <th>Date</th>
+              <th>Won</th>
+              <th>Lost</th>
+              <th>Score</th>
+              <th>Act.</th>
+              <th>Exp.</th>
+              <th>&Delta;</th>
+            </tr>
+            {% for match in matches[::-1] %}
+            <tr>
+              <td>{{convert_timestamp(match.timestamp)}}</td>
+              <td>{{match.winners}}</td>
+              <td>{{match.losers}}</td>
+              <td>{{match.win_score}} : {{match.lose_score}}</td>
+              <td>{{'%i%%' % (100 * (match.actual|float))}}</td>
+              <td>{{'%i%%' % (100 * (match.expected|float))}}</td>
+              <td align="right">{{'%.1f' % (match.delta|float)}}</td>
+            </tr>
+            {% endfor %}
+          </table>
+        </div>
+      </div>
+    </section>
+    <section class="section">
+      <h1 class="title">Add Match</h1>
+      <div class="columns">
+
+
+        <div class="addmatch column">
+          <form action="{{ url_for("officepong.add_match") }}" method="post">
+
+            <div class="columns">
+              <div class="winner column">
+
+                <nav class="panel is-success">
+                  <p class="panel-heading">
+                    Winner
+                  </p>
+                  <div class="panel-block is-flex-direction-column">
+                    <div class="field is-flex is-flex-wrap-wrap">
+                      {% for elo, name, _ in players %}
+                      <div class="control">
+                        <input type="checkbox" value="{{name}}" name="winner" id="win_{{name}}"/>
+                        <label class="button mr-1 mb-1" for="win_{{name}}">{{name}}</label>
+                      </div>
+                      {% endfor %}
+                    </div>
+                    <div class="select is-normal is-success">
+                      <select class="is-danger" name="win_score">
+                        <option value="11">11</option>
+                        {% for n in range(33) %}
+                        <option value="{{n}}">{{n}}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                  </div>
+                </nav>
+              </div>
+
+              <div class="loser column">
+                <nav class="panel is-danger">
+                  <p class="panel-heading">
+                    Loser
+                  </p>
+                  <div class="panel-block is-flex-direction-column">
+                    <div class="field is-flex is-flex-wrap-wrap">
+                      {% for elo, name, _ in players %}
+                      <div class="control">
+                        <input type="checkbox" value="{{name}}" name="loser" id="lose_{{name}}"/>
+                        <label class="button mr-1 mb-1" for="lose_{{name}}">{{name}}</label>
+                      </div>
+                      {% endfor %}
+                    </div>
+                    <div class="select is-normal is-danger">
+                      <select class="is-success" name="lose_score">
+                        <option disabled selected value>
+                        {% for n in range(31) %}
+                        <option value="{{n}}">{{n}}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                  </div>
+                </nav>
+              </div>
+            </div>
+            <div class="level">
+              <div class="level-item">
+                <input type="submit" value="Submit Scores" class="button is-large is-info">
+              </div>
+            </div>
+          </form>
+        </div>
+
+
+      </div>
+    </section>
+    <section class="section">
+      <nav class="panel">
+        <p class="panel-heading">
+          Administration
+        </p>
+        <div class="panel-block">
+          <div class="level is-flex-grow-1">
+            <div class="level-left">
+              <div class="level-item">
+                <div class="register block">
+                  <form action="{{ url_for("officepong.register") }}" method="post">
+                    <div class="field is-horizontal has-addons">
+                      <div class="field-label is-normal">
+                        <label class="label">Register&nbsp;new&nbsp;player</label>
+                      </div>
+                      <div class="field-body">
+                        <div class="field">
+                          <div class="field has-addons">
+                            <p class="control">
+                              <input class="input" type="text" name="name" placeholder="Wall-E">
+                            </p>
+                            <p class="control">
+                              <input type="submit" class="button is-primary" value="Add">
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+            <div class="level-right">
+              <div class="recalculate block level-item">
+                <form action="{{ url_for("officepong.recalculate") }}" method="post">
+                  <input type="submit" class="button is-warning" value="Recalculate all ELO Scores">
+                </form>
+              </div>
+            </div>
+
+          </div>
+          
+          
+        </div>
+      </nav>
+    </section>
   </div>
-  <hr>
-  <div class="recalculate">
-    <form action="{{ url_for("recalculate") }}" method="post">
-      <input type="submit" value="Recalculate">
-    </form>
-  </div>
-  <form action="{{ url_for("register") }}" method="post">
-    <input type="text" name="name">
-    <input type="submit" value="Register">
-  </form>
 </body>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  (document.querySelectorAll('.notification .delete') || []).forEach(($delete) => {
+    const $notification = $delete.parentNode;
+    $delete.addEventListener('click', () => {
+      $notification.parentNode.removeChild($notification);
+      const url = new URL(location);
+      url.searchParams.delete("success");
+      url.searchParams.delete("error");
+      history.pushState({}, "", url);
+    });
+  });
+});
+</script>
 </html>
