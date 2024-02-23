@@ -76,7 +76,7 @@
             <tbody>
               {% for elo, name, games in players if games >= 3 %}
               <tr>
-                <td class="player-name">{{name}}</td>
+                <td>{{name}}</td>
                 <td align="right">{{ elo | int }}</td>
                 <td align="right">{{ games | int }}</td>
               </tr>
