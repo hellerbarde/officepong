@@ -1,0 +1,12 @@
+[project]
+name = "officepong"
+description = "Office leaderboard with ELO ranking for amateurish nerds playing table tennis or whatever."
+version = "0.2.0"
+dependencies = [
+  "quart",
+  "tortoise-orm"
+]
+
+[build-system]
+requires = ["flit_core<4"]
+build-backend = "flit_core.buildapi"
